@@ -5,8 +5,9 @@ import type { Lead, NewLead } from "./types";
 
 // Uses Postgres (Neon / Vercel Postgres) when DATABASE_URL is set,
 // otherwise falls back to a local JSON file so `npm run dev` works with zero setup.
-const usePg = !!process.env.DATABASE_URL;
-const sql = usePg ? neon(process.env.DATABASE_URL!) : null;
+const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.STORAGE_URL;
+const usePg = !!DB_URL;
+const sql = usePg ? neon(DB_URL!) : null;
 
 let ready: Promise<unknown> | null = null;
 function init() {
