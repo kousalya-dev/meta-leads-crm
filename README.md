@@ -31,4 +31,4 @@ Meta Lead Ad form submitted → Meta POSTs `leadgen_id` to `/api/webhooks/meta` 
 8. Test with Meta's **Lead Ads Testing Tool** (developers.facebook.com/tools/lead-ads-testing). For live traffic, the app needs Advanced Access to `leads_retrieval` (App Review) and to be in Live mode.
 
 ## Deploying
-Vercel's filesystem is read-only, so swap `src/lib/store.ts` for Postgres (Neon/Supabase/Vercel Postgres) before deploying there.
+See the Deploy section below.
