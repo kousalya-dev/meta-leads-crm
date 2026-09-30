@@ -5,7 +5,9 @@ import type { Lead, NewLead } from "./types";
 
 // Uses Postgres (Neon / Vercel Postgres) when DATABASE_URL is set,
 // otherwise falls back to a local JSON file so `npm run dev` works with zero setup.
-const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.STORAGE_URL;
+// Vercel's Neon integration may prefix the variable (e.g. STORAGE_DATABASE_URL), so match any prefix.
+const DB_KEY = Object.keys(process.env).find((k) => /(^|_)(DATABASE_URL|POSTGRES_URL|URL)$/.test(k) && !/UNPOOLED|NON_POOLING|PRISMA/.test(k) && /^postgres/.test(process.env[k] ?? ""));
+const DB_URL = DB_KEY ? process.env[DB_KEY] : undefined;
 const usePg = !!DB_URL;
 const sql = usePg ? neon(DB_URL!) : null;
 
