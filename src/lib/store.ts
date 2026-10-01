@@ -28,7 +28,12 @@ function init() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       meta_lead_id TEXT UNIQUE,
       campaign TEXT
-    )`;
+    )`.then(async () => {
+      for (const col of ["campaign_id", "adset_id", "adset_name", "ad_id", "ad_name", "form_id", "platform"]) {
+        await sql!.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS ${col} TEXT`);
+      }
+      await sql!.query("ALTER TABLE leads ADD COLUMN IF NOT EXISTS is_organic BOOLEAN");
+    });
   return ready;
 }
 
@@ -47,6 +52,14 @@ const fromRow = (r: any): Lead => ({
   createdAt: new Date(r.created_at).toISOString(),
   metaLeadId: r.meta_lead_id ?? undefined,
   campaign: r.campaign ?? undefined,
+  campaignId: r.campaign_id ?? undefined,
+  adsetId: r.adset_id ?? undefined,
+  adsetName: r.adset_name ?? undefined,
+  adId: r.ad_id ?? undefined,
+  adName: r.ad_name ?? undefined,
+  formId: r.form_id ?? undefined,
+  platform: r.platform ?? undefined,
+  isOrganic: r.is_organic ?? undefined,
 });
 
 // ---- JSON-file fallback (local dev only) ----
@@ -71,11 +84,14 @@ export async function addLead(input: NewLead): Promise<Lead> {
   if (sql) {
     await init();
     const rows = await sql`
-      INSERT INTO leads (intent, name, address, phone, email, assigned_to, source, segment, stage, meta_lead_id, campaign)
+      INSERT INTO leads (intent, name, address, phone, email, assigned_to, source, segment, stage, meta_lead_id, campaign,
+                         campaign_id, adset_id, adset_name, ad_id, ad_name, form_id, platform, is_organic)
       VALUES (${input.intent ?? "WARM"}, ${input.name}, ${input.address ?? ""}, ${input.phone ?? ""},
               ${input.email ?? ""}, ${input.assignedTo ?? null}, ${input.source ?? "Direct"},
               ${input.segment ?? "Residential"}, ${input.stage ?? "New"}, ${input.metaLeadId ?? null},
-              ${input.campaign ?? null})
+              ${input.campaign ?? null}, ${input.campaignId ?? null}, ${input.adsetId ?? null},
+              ${input.adsetName ?? null}, ${input.adId ?? null}, ${input.adName ?? null},
+              ${input.formId ?? null}, ${input.platform ?? null}, ${input.isOrganic ?? null})
       ON CONFLICT (meta_lead_id) DO NOTHING
       RETURNING *`;
     if (rows.length) return fromRow(rows[0]);

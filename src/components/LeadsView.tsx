@@ -13,6 +13,17 @@ export default function LeadsView({ initial }: { initial: Lead[] }) {
   const [tab, setTab] = useState<Tab>("All");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function simulate() {
+    setBusy(true);
+    const r = await fetch("/api/dev/simulate-meta-lead", { method: "POST" });
+    if (r.ok) {
+      const lead: Lead = await r.json();
+      setLeads((cur) => [lead, ...cur]);
+    }
+    setBusy(false);
+  }
 
   // Poll so new Meta leads appear without a manual refresh.
   useEffect(() => {
@@ -51,7 +62,10 @@ export default function LeadsView({ initial }: { initial: Lead[] }) {
           <h1>Leads</h1>
           <p className="muted">Every lead across sources, their status and assignees in one place</p>
         </div>
-        <button className="btn-green" onClick={() => setOpen(true)}>+ Add Lead</button>
+        <div className="row">
+          <button onClick={simulate} disabled={busy}>{busy ? "Simulating..." : "Simulate Meta lead"}</button>
+          <button className="btn-green" onClick={() => setOpen(true)}>+ Add Lead</button>
+        </div>
       </div>
 
       <div className="stats">
@@ -75,7 +89,7 @@ export default function LeadsView({ initial }: { initial: Lead[] }) {
         <table>
           <thead>
             <tr>
-              {["Intent", "Lead ID", "Lead", "Contact", "Assigned to", "Source", "Segment", "Stage", "Date Created"].map((h) => (
+              {["Intent", "Lead ID", "Lead", "Contact", "Assigned to", "Source", "Campaign", "Segment", "Stage", "Date Created"].map((h) => (
                 <th key={h}>{h}</th>
               ))}
             </tr>
@@ -88,14 +102,24 @@ export default function LeadsView({ initial }: { initial: Lead[] }) {
                 <td><b>{l.name}</b><div className="muted sm">{l.address}</div></td>
                 <td>{l.phone}<div className="muted sm">{l.email}</div></td>
                 <td>{l.assignedTo ?? <span className="muted">Unassigned</span>}</td>
-                <td>{l.source}</td>
+                <td>{l.source}{l.platform && <div className="muted sm">{l.platform}</div>}</td>
+                <td>
+                  {l.campaign ? (
+                    <>
+                      {l.campaign}
+                      <div className="muted sm">{[l.adsetName, l.adName].filter(Boolean).join(" · ")}</div>
+                    </>
+                  ) : (
+                    <span className="muted">-</span>
+                  )}
+                </td>
                 <td>{l.segment}</td>
                 <td><span className="stage">{l.stage}</span></td>
                 <td>{fmt(l.createdAt)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={9} className="empty">No leads yet. Add one or wait for Meta Ads leads to arrive.</td></tr>
+              <tr><td colSpan={10} className="empty">No leads yet. Add one or wait for Meta Ads leads to arrive.</td></tr>
             )}
           </tbody>
         </table>

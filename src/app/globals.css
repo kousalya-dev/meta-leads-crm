@@ -33,3 +33,5 @@ td { padding: 14px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: middle
 .modal { background: #fff; padding: 24px; border-radius: 14px; width: 380px; display: grid; gap: 10px; }
 .modal input, .modal select { padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; }
 .row { display: flex; justify-content: flex-end; gap: 8px; }
+.head .row { align-items: flex-start; }
+.head .row button:not(.btn-green) { background: #fff; border: 1px solid #d1d5db; padding: 10px 14px; border-radius: 10px; cursor: pointer; }

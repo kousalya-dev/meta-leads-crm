@@ -22,6 +22,14 @@ export interface Lead {
   createdAt: string; // ISO
   metaLeadId?: string; // dedupe key for Meta leads
   campaign?: string;
+  campaignId?: string;
+  adsetId?: string;
+  adsetName?: string;
+  adId?: string;
+  adName?: string;
+  formId?: string;
+  platform?: string; // facebook | instagram
+  isOrganic?: boolean;
 }
 
 export type NewLead = Partial<Omit<Lead, "id" | "createdAt">> & { name: string };
