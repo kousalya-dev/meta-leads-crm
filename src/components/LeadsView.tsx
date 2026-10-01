@@ -14,6 +14,17 @@ export default function LeadsView({ initial }: { initial: Lead[] }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
+
+  async function sync() {
+    setSyncMsg("Syncing...");
+    const r = await fetch("/api/sync/meta", { method: "POST" });
+    const j = await r.json();
+    if (!r.ok) return setSyncMsg(`Sync failed: ${j.error}`);
+    setSyncMsg(`Synced: ${j.forms} forms, ${j.fetched} leads found, ${j.added} new`);
+    const l = await fetch("/api/leads", { cache: "no-store" });
+    if (l.ok) setLeads(await l.json());
+  }
 
   async function simulate() {
     setBusy(true);
@@ -63,10 +74,13 @@ export default function LeadsView({ initial }: { initial: Lead[] }) {
           <p className="muted">Every lead across sources, their status and assignees in one place</p>
         </div>
         <div className="row">
+          <button onClick={sync}>Sync from Meta</button>
           <button onClick={simulate} disabled={busy}>{busy ? "Simulating..." : "Simulate Meta lead"}</button>
           <button className="btn-green" onClick={() => setOpen(true)}>+ Add Lead</button>
         </div>
       </div>
+
+      {syncMsg && <p className="muted sm">{syncMsg}</p>}
 
       <div className="stats">
         {stats.map(([label, n, sub]) => (

@@ -56,13 +56,48 @@ export function mapGraphLead(data: GraphLead): NewLead {
   };
 }
 
+const graph = () =>
+  `${process.env.META_GRAPH_BASE || "https://graph.facebook.com"}/${process.env.META_GRAPH_VERSION || "v26.0"}`;
+const token = () => process.env.META_PAGE_ACCESS_TOKEN;
+
+async function get<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Graph API ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 // The webhook only sends a leadgen_id; the actual form answers must be fetched from the Graph API.
 export async function fetchMetaLead(leadgenId: string): Promise<NewLead> {
-  const v = process.env.META_GRAPH_VERSION || "v26.0";
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
-  const res = await fetch(
-    `https://graph.facebook.com/${v}/${leadgenId}?fields=${FIELDS}&access_token=${token}`
+  return mapGraphLead(await get<GraphLead>(`${graph()}/${leadgenId}?fields=${FIELDS}&access_token=${token()}`));
+}
+
+// ---- Polling (no webhook needed) ----
+interface Paged<T> {
+  data: T[];
+  paging?: { next?: string };
+}
+
+async function getAll<T>(url: string, maxPages = 20): Promise<T[]> {
+  const out: T[] = [];
+  let next: string | undefined = url;
+  for (let i = 0; next && i < maxPages; i++) {
+    const page: Paged<T> = await get(next);
+    out.push(...page.data);
+    next = page.paging?.next;
+  }
+  return out;
+}
+
+// With a Page access token, `me` is the Page itself.
+export async function fetchAllMetaLeads(): Promise<{ forms: number; leads: GraphLead[] }> {
+  const forms = await getAll<{ id: string; name: string }>(
+    `${graph()}/me/leadgen_forms?fields=id,name,status&limit=50&access_token=${token()}`
   );
-  if (!res.ok) throw new Error(`Graph API ${res.status}: ${await res.text()}`);
-  return mapGraphLead(await res.json());
+  const leads: GraphLead[] = [];
+  for (const form of forms) {
+    leads.push(
+      ...(await getAll<GraphLead>(`${graph()}/${form.id}/leads?fields=${FIELDS}&limit=100&access_token=${token()}`))
+    );
+  }
+  return { forms: forms.length, leads };
 }
